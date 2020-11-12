@@ -2,7 +2,8 @@
 require 'yaml'
 require 'aws-sdk-ec2'
 
-config = YAML.load(File.read('./config.yml'))
+config_file = ARGV[2]
+config = YAML.load(File.read(config_file ? config_file : './config.yml'))
 
 AWS_ACCESS_KEY_ID = config['aws']['access_key_id']
 AWS_SECRET_ACCESS_KEY = config['aws']['secret_access_key']
