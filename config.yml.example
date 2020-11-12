@@ -1,0 +1,8 @@
+aws:
+  access_key_id: ""
+  secret_access_key: ""
+  aws_region: ""
+servers:
+  core: ""
+  orders: ""
+  users: ""
