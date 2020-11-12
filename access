@@ -25,4 +25,4 @@ server_description = ec2.describe_instances(filters: [
 
 ip = server_description.reservations.first.instances.first.private_ip_address
 
-`ssh -i "#{identity_file}" ec2-user@#{ip}`
+exec("ssh -i '#{identity_file}' ec2-user@#{ip}")
