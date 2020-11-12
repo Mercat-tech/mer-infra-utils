@@ -12,7 +12,7 @@ SERVER_LISTS = config['servers']
 server = ARGV[0]
 raise Exception.new('Server not found') unless SERVER_LISTS.keys.include?(server)
 identity_file = ARGV[1]
-raise Exception.new('Identity file not found') unless identity_file.present?
+raise Exception.new('Identity file not found') unless identity_file
 
 credentials = Aws::Credentials.new(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 ec2 = Aws::EC2::Client.new(region: AWS_REGION, credentials: credentials)
