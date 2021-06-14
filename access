@@ -12,18 +12,32 @@ SERVER_LISTS = config['servers']
 
 server = ARGV[0]
 raise Exception.new('Server not found') unless SERVER_LISTS.keys.include?(server)
+
 identity_file = ARGV[1]
 raise Exception.new('Identity file not found') unless identity_file
 
 credentials = Aws::Credentials.new(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 ec2 = Aws::EC2::Client.new(region: AWS_REGION, credentials: credentials)
-server_description = ec2.describe_instances(filters: [
-	{
-		name: "tag:Name",
-		values: [SERVER_LISTS[server]],
-	},
-])
+server_description = ec2.describe_instances(
+  filters: [
+    {
+      name: 'tag:Name',
+      values: [SERVER_LISTS[server]]
+    }
+  ]
+)
 
-ip = server_description.reservations.first.instances.first.private_ip_address
+# https://docs.aws.amazon.com/sdk-for-ruby/v2/api/Aws/EC2/Types/InstanceState.html#name-instance_method
+private_ip_address = server_description.reservations.map do |reservation|
+  reservation.instances.map do |instance|
+    next if instance.state.name != 'running'
+
+    instance.private_ip_address
+  end
+end
+
+ip = private_ip_address.flatten.first
+
+raise Exception, 'Private IP address not found' unless ip.present?
 
 exec("ssh -i '#{identity_file}' ec2-user@#{ip}")
