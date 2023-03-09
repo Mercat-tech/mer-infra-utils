@@ -20,7 +20,7 @@ container = "#{SERVER_LISTS[server]}-#{env}-container"
 
 credentials = Aws::Credentials.new(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 ecs = Aws::ECS::Client.new(region: AWS_REGION, credentials: credentials)
-task_arn = ecs.list_tasks(cluster: 'mer-core-dev-ecs-cluster').task_arns.first
+task_arn = ecs.list_tasks(cluster: cluster).task_arns.first
 
 container = "#{SERVER_LISTS[server]}-#{env}-sidekiq-container" if sidekiq == '--sidekiq=yes'
 
