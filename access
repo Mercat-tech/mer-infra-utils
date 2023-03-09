@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 require 'yaml'
-require 'aws-sdk-ec2'
+require 'aws-sdk-ecs'
 
-config_file = ARGV[2]
+config_file = ARGV[3]
 config = YAML.load(File.read(config_file ? config_file : './config.yml'))
 
 AWS_ACCESS_KEY_ID = config['aws']['access_key_id']
@@ -11,19 +11,17 @@ AWS_REGION = config['aws']['aws_region']
 SERVER_LISTS = config['servers']
 
 server = ARGV[0]
+env = ARGV[1]
+sidekiq = ARGV[2]
 raise Exception.new('Server not found') unless SERVER_LISTS.keys.include?(server)
-identity_file = ARGV[1]
-raise Exception.new('Identity file not found') unless identity_file
+
+cluster = "#{SERVER_LISTS[server]}-#{env}-ecs-cluster"
+container = "#{SERVER_LISTS[server]}-#{env}-container"
 
 credentials = Aws::Credentials.new(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-ec2 = Aws::EC2::Client.new(region: AWS_REGION, credentials: credentials)
-server_description = ec2.describe_instances(filters: [
-	{
-		name: "tag:Name",
-		values: [SERVER_LISTS[server]],
-	},
-])
+ecs = Aws::ECS::Client.new(region: AWS_REGION, credentials: credentials)
+task_arn = ecs.list_tasks(cluster: 'mer-core-dev-ecs-cluster').task_arns.first
 
-ip = server_description.reservations.first.instances.first.private_ip_address
+container = "#{SERVER_LISTS[server]}-#{env}-sidekiq-container" if sidekiq == '--sidekiq=yes'
 
-exec("ssh -i '#{identity_file}' ec2-user@#{ip}")
+exec("AWS_REGION=#{AWS_REGION} AWS_ACCESS_KEY_ID=#{AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=#{AWS_SECRET_ACCESS_KEY} aws ecs execute-command --cluster #{cluster} --task #{task_arn} --container #{container} --interactive --command '/bin/bash'")
