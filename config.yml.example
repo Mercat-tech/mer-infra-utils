@@ -6,3 +6,6 @@ servers:
   core: ""
   orders: ""
   users: ""
+bastions:
+  stage_ip: ""
+  prod_ip: ""

@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'aws-sdk-ecs'
+
+config_file = ARGV[3]
+config = YAML.load(File.read(config_file ? config_file : './config.yml'))
+
+AWS_ACCESS_KEY_ID = config['aws']['access_key_id']
+AWS_SECRET_ACCESS_KEY = config['aws']['secret_access_key']
+AWS_REGION = config['aws']['aws_region']
+SERVER_LISTS = config['servers']
+
+server = ARGV[0]
+env = ARGV[1]
+raise Exception.new('Server not found') unless SERVER_LISTS.keys.include?(server)
+
+cluster = "#{SERVER_LISTS[server]}-#{env}-ecs-cluster"
+container = "#{SERVER_LISTS[server]}-#{env}-sidekiq-container"
+
+credentials = Aws::Credentials.new(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+ecs = Aws::ECS::Client.new(region: AWS_REGION, credentials: credentials)
+task_arn = ecs.list_tasks(cluster: cluster).task_arns.first
+response = ecs.describe_tasks(cluster: cluster, tasks: [task_arn])
+task_ip_address = response.tasks[0].containers[0].network_interfaces[0].private_ipv_4_address
+bastion_id = config['bastions']["#{env}_ip"]
+
+puts('Open http://localhost:8081/sidekiq/')
+exec("ssh -N ubuntu@#{bastion_id} -L 8081:#{task_ip_address}:80 -i ~/.ssh/key-bastion")
